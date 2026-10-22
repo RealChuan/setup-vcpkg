@@ -1,305 +1,152 @@
-# Create a GitHub Action Using TypeScript
+# Setup vcpkg
 
-![Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)
-![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
-![Check dist/](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml/badge.svg)
-![CodeQL](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml/badge.svg)
+![Linter](https://github.com/RealChuan/setup-vcpkg/actions/workflows/linter.yml/badge.svg)
+![CI](https://github.com/RealChuan/setup-vcpkg/actions/workflows/ci.yml/badge.svg)
+![Check dist/](https://github.com/RealChuan/setup-vcpkg/actions/workflows/check-dist.yml/badge.svg)
 ![Coverage](./badges/coverage.svg)
 
-Use this template to bootstrap the creation of a TypeScript action. :rocket:
+在 GitHub Actions 上安装
+[vcpkg](https://github.com/microsoft/vcpkg)。支持 Windows、Linux 和 macOS 运行器，**只安装 vcpkg 本身，不安装任何库（ports）**。
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+## 安装位置
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+| 平台    | 默认目录                 | 可执行文件                     |
+| ------- | ------------------------ | ------------------------------ |
+| Windows | `C:\vcpkg`               | `C:\vcpkg\vcpkg.exe`           |
+| Linux   | `/usr/local/share/vcpkg` | `/usr/local/share/vcpkg/vcpkg` |
+| macOS   | `/usr/local/share/vcpkg` | `/usr/local/share/vcpkg/vcpkg` |
 
-## Create Your Own Action
+安装完成后，Action 会：
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+- 把安装目录加入后续步骤的 `PATH`
+- 导出 `VCPKG_ROOT` 和 `VCPKG_INSTALLATION_ROOT` 环境变量
+- 输出 `vcpkg-root` 和 `vcpkg-version`
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
-
-> [!IMPORTANT]
->
-> Make sure to remove or update the [`CODEOWNERS`](./CODEOWNERS) file! For
-> details on how to use this file, see
-> [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
-
-## Initial Setup
-
-After you've cloned the repository to your local machine or codespace, you'll
-need to perform some initial setup steps before you can develop your action.
-
-> [!NOTE]
->
-> You'll need to have a reasonably modern version of
-> [Node.js](https://nodejs.org) handy (20.x or later should work!). If you are
-> using a version manager like [`nodenv`](https://github.com/nodenv/nodenv) or
-> [`fnm`](https://github.com/Schniz/fnm), this template has a `.node-version`
-> file at the root of the repository that can be used to automatically switch to
-> the correct version when you `cd` into the repository. Additionally, this
-> `.node-version` file is used by GitHub Actions in any `actions/setup-node`
-> actions.
-
-1. :hammer_and_wrench: Install the dependencies
-
-   ```bash
-   npm install
-   ```
-
-1. :building_construction: Package the TypeScript for distribution
-
-   ```bash
-   npm run bundle
-   ```
-
-1. :white_check_mark: Run the tests
-
-   ```bash
-   $ npm test
-
-   PASS  ./index.test.js
-     ✓ throws invalid number (3ms)
-     ✓ wait 500 ms (504ms)
-     ✓ test runs (95ms)
-
-   ...
-   ```
-
-## Update the Action Metadata
-
-The [`action.yml`](action.yml) file defines metadata about your action, such as
-input(s) and output(s). For details about this file, see
-[Metadata syntax for GitHub Actions](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions).
-
-When you copy this repository, update `action.yml` with the name, description,
-inputs, and outputs for your action.
-
-## Update the Action Code
-
-The [`src/`](./src/) directory is the heart of your action! This contains the
-source code that will be run when your action is invoked. You can replace the
-contents of this directory with your own code.
-
-There are a few things to keep in mind when writing your action code:
-
-- Most GitHub Actions toolkit and CI/CD operations are processed asynchronously.
-  In `main.ts`, you will see that the action is run in an `async` function.
-
-  ```javascript
-  import * as core from '@actions/core'
-  //...
-
-  async function run() {
-    try {
-      //...
-    } catch (error) {
-      core.setFailed(error.message)
-    }
-  }
-  ```
-
-  For more information about the GitHub Actions toolkit, see the
-  [documentation](https://github.com/actions/toolkit/blob/main/README.md).
-
-So, what are you waiting for? Go ahead and start customizing your action!
-
-1. Create a new branch
-
-   ```bash
-   git checkout -b releases/v1
-   ```
-
-1. Replace the contents of `src/` with your action code
-1. Add tests to `__tests__/` for your source code
-1. Format, test, and build the action
-
-   ```bash
-   npm run all
-   ```
-
-   > This step is important! It will run [`rollup`](https://rollupjs.org/) to
-   > build the final JavaScript action code with all dependencies included. If
-   > you do not run this step, your action will not work correctly when it is
-   > used in a workflow.
-
-1. (Optional) Test your action locally
-
-   The [`@github/local-action`](https://github.com/github/local-action) utility
-   can be used to test your action locally. It is a simple command-line tool
-   that "stubs" (or simulates) the GitHub Actions Toolkit. This way, you can run
-   your TypeScript action locally without having to commit and push your changes
-   to a repository.
-
-   The `local-action` utility can be run in the following ways:
-   - Visual Studio Code Debugger
-
-     Make sure to review and, if needed, update
-     [`.vscode/launch.json`](./.vscode/launch.json)
-
-   - Terminal/Command Prompt
-
-     ```bash
-     # npx @github/local action <action-yaml-path> <entrypoint> <dotenv-file>
-     npx @github/local-action . src/main.ts .env
-     ```
-
-   You can provide a `.env` file to the `local-action` CLI to set environment
-   variables used by the GitHub Actions Toolkit. For example, setting inputs and
-   event payload data used by your action. For more information, see the example
-   file, [`.env.example`](./.env.example), and the
-   [GitHub Actions Documentation](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-
-1. Commit your changes
-
-   ```bash
-   git add .
-   git commit -m "My first action is ready!"
-   ```
-
-1. Push them to your repository
-
-   ```bash
-   git push -u origin releases/v1
-   ```
-
-1. Create a pull request and get feedback on your action
-1. Merge the pull request into the `main` branch
-
-Your action is now published! :rocket:
-
-For information about versioning your action, see
-[Versioning](https://github.com/actions/toolkit/blob/main/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-## Validate the Action
-
-You can now validate the action by referencing it in a workflow file. For
-example, [`ci.yml`](./.github/workflows/ci.yml) demonstrates how to reference an
-action in the same repository.
+## 快速开始
 
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
-  - name: Test Local Action
-    id: test-action
-    uses: ./
-    with:
-      milliseconds: 1000
+    steps:
+      - uses: actions/checkout@v7
 
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+      - name: Setup vcpkg
+        uses: RealChuan/setup-vcpkg@main
+
+      - name: Show the installed version
+        run: vcpkg version
 ```
 
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/typescript-action/actions)! :rocket:
+## 输入参数
 
-## Usage
+| 参数            | 说明                                 | 必需 | 默认值                               |
+| --------------- | ------------------------------------ | ---- | ------------------------------------ |
+| `repository`    | 从哪里克隆 vcpkg                     | 否   | `https://github.com/microsoft/vcpkg` |
+| `ref`           | 分支、标签或提交                     | 否   | `master`                             |
+| `install-dir`   | 安装目录，留空则使用上表中的默认目录 | 否   | `''`                                 |
+| `clean`         | 安装前删除已存在的目录               | 否   | `true`                               |
+| `run-integrate` | 是否执行 `vcpkg integrate install`   | 否   | `true`                               |
 
-After testing, you can create version tag(s) that developers can use to
-reference different stable versions of your action. For more information, see
-[Versioning](https://github.com/actions/toolkit/blob/main/docs/action-versioning.md)
-in the GitHub Actions toolkit.
+## 输出参数
 
-To include the action in a workflow in another repository, you can use the
-`uses` syntax with the `@` symbol to reference a specific branch, tag, or commit
-hash.
+| 参数            | 说明              |
+| --------------- | ----------------- |
+| `vcpkg-root`    | vcpkg 的安装目录  |
+| `vcpkg-version` | 安装的 vcpkg 版本 |
+
+## 使用示例
+
+### 配合 CMake 使用
 
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
+- name: Setup vcpkg
+  uses: RealChuan/setup-vcpkg@main
 
-  - name: Test Local Action
-    id: test-action
-    uses: actions/typescript-action@v1 # Commit with the `v1` tag
-    with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+- name: Configure
+  shell: bash
+  run:
+    cmake -B build -S .
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 ```
 
-## Publishing a New Release
+### 固定 vcpkg 版本
 
-This project includes a helper script, [`script/release`](./script/release)
-designed to streamline the process of tagging and pushing new releases for
-GitHub Actions.
+`ref` 可以是分支、标签，也可以是提交哈希（此时会回退为完整克隆再 checkout）：
 
-GitHub Actions allows users to select a specific version of the action to use,
-based on release tags. This script simplifies this process by performing the
-following steps:
+```yaml
+- name: Setup vcpkg
+  uses: RealChuan/setup-vcpkg@main
+  with:
+    ref: 2024.09.30
+```
 
-1. **Retrieving the latest release tag:** The script starts by fetching the most
-   recent SemVer release tag of the current branch, by looking at the local data
-   available in your repository.
-1. **Prompting for a new release tag:** The user is then prompted to enter a new
-   release tag. To assist with this, the script displays the tag retrieved in
-   the previous step, and validates the format of the inputted tag (vX.X.X). The
-   user is also reminded to update the version field in package.json.
-1. **Tagging the new release:** The script then tags a new release and syncs the
-   separate major tag (e.g. v1, v2) with the new release tag (e.g. v1.0.0,
-   v2.1.2). When the user is creating a new major release, the script
-   auto-detects this and creates a `releases/v#` branch for the previous major
-   version.
-1. **Pushing changes to remote:** Finally, the script pushes the necessary
-   commits, tags and branches to the remote repository. From here, you will need
-   to create a new release in GitHub so users can easily reference the new tags
-   in their workflows.
+### 使用自己的 vcpkg 仓库
 
-## Dependency License Management
+```yaml
+- name: Setup vcpkg
+  uses: RealChuan/setup-vcpkg@main
+  with:
+    repository: https://github.com/your-org/vcpkg
+    ref: my-branch
+```
 
-This template includes a GitHub Actions workflow,
-[`licensed.yml`](./.github/workflows/licensed.yml), that uses
-[Licensed](https://github.com/licensee/licensed) to check for dependencies with
-missing or non-compliant licenses. This workflow is initially disabled. To
-enable the workflow, follow the below steps.
+私有仓库可以通过 URL 里带 token 的方式克隆，例如
+`https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/your-org/vcpkg`。
 
-1. Open [`licensed.yml`](./.github/workflows/licensed.yml)
-1. Uncomment the following lines:
+### 安装到自定义目录
 
-   ```yaml
-   # pull_request:
-   #   branches:
-   #     - main
-   # push:
-   #   branches:
-   #     - main
-   ```
+```yaml
+- name: Setup vcpkg
+  uses: RealChuan/setup-vcpkg@main
+  with:
+    install-dir: ${{ runner.temp }}/vcpkg
+```
 
-1. Save and commit the changes
+### 不做全局集成
 
-Once complete, this workflow will run any time a pull request is created or
-changes pushed directly to `main`. If the workflow detects any dependencies with
-missing or non-compliant licenses, it will fail the workflow and provide details
-on the issue(s) found.
+`vcpkg integrate install`
+会写入当前用户的集成配置（`~/.vcpkg`），如果只想拿到一个可用的 vcpkg，可以关闭它：
 
-### Updating Licenses
+```yaml
+- name: Setup vcpkg
+  uses: RealChuan/setup-vcpkg@main
+  with:
+    run-integrate: false
+```
 
-Whenever you install or update dependencies, you can use the Licensed CLI to
-update the licenses database. To install Licensed, see the project's
-[Readme](https://github.com/licensee/licensed?tab=readme-ov-file#installation).
+### 配合缓存（可选）
 
-To update the cached licenses, run the following command:
+vcpkg 的二进制缓存默认写在 `~/.cache/vcpkg/archives`（Windows 为
+`%LOCALAPPDATA%\vcpkg\archives`），可以自行缓存该目录；本 Action 不负责缓存。
+
+## 说明
+
+- **权限**：Linux 运行器上 `/usr/local/share` 属于 root，Action 会在必要时用免密
+  `sudo`
+  创建目录并交还给当前用户，后续的 clone、bootstrap、integrate 都以运行器用户身份执行，因此
+  `vcpkg integrate install` 写入的是正确的家目录。
+- **PowerShell**：Windows 上通过 PowerShell 执行 `bootstrap-vcpkg.bat`，优先使用
+  `pwsh`，没有时回退到 `powershell`。
+- **不会安装任何库**：安装完成后需要自己执行
+  `vcpkg install <port>`，或者使用 manifest 模式（`vcpkg.json`）。需要 `vcpkg`
+  的 CMake 工具链文件时可以用 `$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake`。
+- **重复执行**：默认 `clean: true`，会先删除已有目录；设为 `false`
+  时会复用已有目录，只重新执行 bootstrap 和 integrate。
+
+## 开发
 
 ```bash
-licensed cache
+npm install        # 安装依赖
+npm run all        # 格式化、lint、测试、更新覆盖率徽章、打包 dist/
 ```
 
-To check the status of cached licenses, run the following command:
+修改 `src/` 后必须重新打包并提交 `dist/index.js`，否则 Action 运行的还是旧代码。
 
-```bash
-licensed status
-```
+## 许可
+
+[MIT](./LICENSE)

@@ -1,5 +1,10 @@
 import * as core from '@actions/core'
-import { wait } from './wait.js'
+import { install } from './install.js'
+import {
+  DEFAULT_REF,
+  DEFAULT_REPOSITORY,
+  isSupportedPlatform
+} from './vcpkg.js'
 
 /**
  * The main function for the action.
@@ -8,20 +13,32 @@ import { wait } from './wait.js'
  */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    if (!isSupportedPlatform()) {
+      throw new Error(
+        `vcpkg cannot be installed on the "${process.platform}" platform. Supported platforms are Windows, Linux and macOS.`
+      )
+    }
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    const result = await install({
+      repository: core.getInput('repository') || DEFAULT_REPOSITORY,
+      ref: core.getInput('ref') || DEFAULT_REF,
+      installDir: core.getInput('install-dir'),
+      clean: core.getBooleanInput('clean'),
+      runIntegrate: core.getBooleanInput('run-integrate')
+    })
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    // Make the installation discoverable by the following steps.
+    core.addPath(result.installDir)
+    core.exportVariable('VCPKG_ROOT', result.installDir)
+    core.exportVariable('VCPKG_INSTALLATION_ROOT', result.installDir)
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    core.setOutput('vcpkg-root', result.installDir)
+    core.setOutput('vcpkg-version', result.version)
+
+    core.info(`vcpkg ${result.version} is ready at ${result.installDir}`)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
+    else core.setFailed(String(error))
   }
 }

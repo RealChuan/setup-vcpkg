@@ -1,23 +1,41 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
+name: Setup vcpkg
+description:
+  Install vcpkg on Windows, macOS and Linux runners. No ports are installed.
+author: RealChuan
 
-# Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: heart
-  color: red
+  icon: package
+  color: blue
 
-# Define your inputs here.
 inputs:
-  milliseconds:
-    description: Your input description here
-    required: true
-    default: '1000'
+  repository:
+    description: Git repository to install vcpkg from.
+    required: false
+    default: https://github.com/microsoft/vcpkg
+  ref:
+    description: Branch, tag or commit of the repository to install.
+    required: false
+    default: master
+  install-dir:
+    description: >-
+      Directory to install vcpkg into. Defaults to C:\vcpkg on Windows and
+      /usr/local/share/vcpkg on Linux and macOS.
+    required: false
+    default: ''
+  clean:
+    description: Remove an existing installation before installing.
+    required: false
+    default: 'true'
+  run-integrate:
+    description: Run `vcpkg integrate install` after bootstrapping vcpkg.
+    required: false
+    default: 'true'
 
-# Define your outputs here.
 outputs:
-  time:
-    description: Your output description here
+  vcpkg-root:
+    description: Directory vcpkg was installed into.
+  vcpkg-version:
+    description: Version of the installed vcpkg.
 
 runs:
   using: node24

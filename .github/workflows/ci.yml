@@ -19,11 +19,11 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         id: setup-node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
@@ -45,20 +45,63 @@ jobs:
         run: npm run ci-test
 
   test-action:
-    name: GitHub Actions Test
+    name: GitHub Actions Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v7
+
+      - name: Test Local Action
+        id: test-action
+        uses: ./
+
+      - name: Check the installation (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'C:\vcpkg\vcpkg.exe')) {
+            throw 'vcpkg.exe was not installed into C:\vcpkg'
+          }
+          if ($env:VCPKG_ROOT -ne '${{ steps.test-action.outputs.vcpkg-root }}') {
+            throw "VCPKG_ROOT is '$env:VCPKG_ROOT'"
+          }
+          vcpkg version
+
+      - name: Check the installation (Linux and macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          test -x /usr/local/share/vcpkg/vcpkg
+          test "$VCPKG_ROOT" = '${{ steps.test-action.outputs.vcpkg-root }}'
+          vcpkg version
+
+  test-action-custom-dir:
+    name: GitHub Actions Test (custom install dir)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Test Local Action
         id: test-action
         uses: ./
         with:
-          milliseconds: 2000
+          install-dir: ${{ runner.temp }}/vcpkg-custom
+          run-integrate: false
 
-      - name: Print Output
-        id: output
-        run: echo "${{ steps.test-action.outputs.time }}"
+      - name: Check the custom installation directory
+        shell: bash
+        run: |
+          test -x "${{ runner.temp }}/vcpkg-custom/vcpkg"
+          vcpkg version
