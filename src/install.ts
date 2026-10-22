@@ -66,7 +66,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     )
   }
 
-  await removeExisting(installDir, options.clean ?? true)
+  await removeExisting(installDir, platform, options.clean ?? true)
   await prepareInstallDir(installDir, platform)
   await cloneRepository(git, options.repository, options.ref, installDir)
 
@@ -86,6 +86,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 /** Removes a previous installation unless it should be reused. */
 async function removeExisting(
   installDir: string,
+  platform: string,
   clean: boolean
 ): Promise<void> {
   if (!fs.existsSync(installDir)) return
@@ -96,7 +97,17 @@ async function removeExisting(
   }
 
   core.info(`Removing the existing vcpkg installation at ${installDir}`)
-  await io.rmRF(installDir)
+  try {
+    await io.rmRF(installDir)
+  } catch (error) {
+    if (isWindows(platform)) throw error
+
+    // Runner images ship a root owned vcpkg at the default location, so
+    // removing it needs elevated rights. Everything after this point runs as
+    // the runner user again.
+    core.info(`${installDir} is not owned by the runner user, using sudo`)
+    await exec.exec('sudo', ['rm', '-rf', installDir])
+  }
 
   if (fs.existsSync(installDir)) {
     throw new Error(
@@ -118,7 +129,12 @@ async function prepareInstallDir(
   platform: string
 ): Promise<void> {
   if (isWindows(platform)) return
-  if (fs.existsSync(installDir)) return
+
+  if (fs.existsSync(installDir)) {
+    if (await isWritable(installDir)) return
+    await takeOwnership(installDir)
+    return
+  }
 
   const parent = path.posix.dirname(installDir)
   if (!fs.existsSync(parent)) {
@@ -129,12 +145,17 @@ async function prepareInstallDir(
 
   core.info(`Creating ${installDir} with sudo`)
   await exec.exec('sudo', ['mkdir', '-p', installDir])
+  await takeOwnership(installDir)
+}
 
+/** Hands an existing directory over to the user running the action. */
+async function takeOwnership(directory: string): Promise<void> {
   const uid = process.getuid?.()
   const gid = process.getgid?.()
-  if (uid !== undefined && gid !== undefined) {
-    await exec.exec('sudo', ['chown', '-R', `${uid}:${gid}`, installDir])
-  }
+  if (uid === undefined || gid === undefined) return
+
+  core.info(`Taking ownership of ${directory} with sudo`)
+  await exec.exec('sudo', ['chown', '-R', `${uid}:${gid}`, directory])
 }
 
 /** Returns true when the current process may write to `directory`. */

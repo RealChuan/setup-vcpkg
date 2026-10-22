@@ -4,9 +4,10 @@
 MD004:
   style: dash
 
-# Disable line length for tables
-MD013:
-  tables: false
+# Line length is disabled: Prettier already normalises the layout, but it
+# cannot wrap Chinese prose because there are no spaces to break on. Keeping
+# MD013 enabled would fail on every longer paragraph.
+MD013: false
 
 # Ordered list item prefix
 MD029:

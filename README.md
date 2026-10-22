@@ -126,9 +126,11 @@ vcpkg 的二进制缓存默认写在 `~/.cache/vcpkg/archives`（Windows 为
 
 ## 说明
 
-- **权限**：Linux 运行器上 `/usr/local/share` 属于 root，Action 会在必要时用免密
-  `sudo`
-  创建目录并交还给当前用户，后续的 clone、bootstrap、integrate 都以运行器用户身份执行，因此
+- **权限**：Linux/macOS 运行器上 `/usr/local/share`
+  属于 root（Ubuntu 镜像还预装了 root 所有的
+  `/usr/local/share/vcpkg`）。Action 只在两处使用免密
+  `sudo`：删除已存在的 root 目录、创建目录后 `chown`
+  交还当前用户。clone、bootstrap、integrate 全部以运行器用户身份执行，因此
   `vcpkg integrate install` 写入的是正确的家目录。
 - **PowerShell**：Windows 上通过 PowerShell 执行 `bootstrap-vcpkg.bat`，优先使用
   `pwsh`，没有时回退到 `powershell`。

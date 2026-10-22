@@ -29856,7 +29856,7 @@ async function install(options) {
     if (!git) {
         throw new Error('git is required to install vcpkg but was not found on PATH');
     }
-    await removeExisting(installDir, options.clean ?? true);
+    await removeExisting(installDir, platform, options.clean ?? true);
     await prepareInstallDir(installDir, platform);
     await cloneRepository(git, options.repository, options.ref, installDir);
     const powershell = await resolvePowerShell(platform);
@@ -29871,7 +29871,7 @@ async function install(options) {
     return { installDir, version };
 }
 /** Removes a previous installation unless it should be reused. */
-async function removeExisting(installDir, clean) {
+async function removeExisting(installDir, platform, clean) {
     if (!fs$1.existsSync(installDir))
         return;
     if (!clean) {
@@ -29879,7 +29879,18 @@ async function removeExisting(installDir, clean) {
         return;
     }
     info(`Removing the existing vcpkg installation at ${installDir}`);
-    await rmRF(installDir);
+    try {
+        await rmRF(installDir);
+    }
+    catch (error) {
+        if (isWindows(platform))
+            throw error;
+        // Runner images ship a root owned vcpkg at the default location, so
+        // removing it needs elevated rights. Everything after this point runs as
+        // the runner user again.
+        info(`${installDir} is not owned by the runner user, using sudo`);
+        await exec('sudo', ['rm', '-rf', installDir]);
+    }
     if (fs$1.existsSync(installDir)) {
         throw new Error(`Failed to remove the existing vcpkg installation at ${installDir}. Check the file permissions or set "clean" to false.`);
     }
@@ -29895,8 +29906,12 @@ async function removeExisting(installDir, clean) {
 async function prepareInstallDir(installDir, platform) {
     if (isWindows(platform))
         return;
-    if (fs$1.existsSync(installDir))
+    if (fs$1.existsSync(installDir)) {
+        if (await isWritable(installDir))
+            return;
+        await takeOwnership(installDir);
         return;
+    }
     const parent = path$1.posix.dirname(installDir);
     if (!fs$1.existsSync(parent)) {
         await fs$1.promises.mkdir(parent, { recursive: true }).catch(() => undefined);
@@ -29905,11 +29920,16 @@ async function prepareInstallDir(installDir, platform) {
         return;
     info(`Creating ${installDir} with sudo`);
     await exec('sudo', ['mkdir', '-p', installDir]);
+    await takeOwnership(installDir);
+}
+/** Hands an existing directory over to the user running the action. */
+async function takeOwnership(directory) {
     const uid = process.getuid?.();
     const gid = process.getgid?.();
-    if (uid !== undefined && gid !== undefined) {
-        await exec('sudo', ['chown', '-R', `${uid}:${gid}`, installDir]);
-    }
+    if (uid === undefined || gid === undefined)
+        return;
+    info(`Taking ownership of ${directory} with sudo`);
+    await exec('sudo', ['chown', '-R', `${uid}:${gid}`, directory]);
 }
 /** Returns true when the current process may write to `directory`. */
 async function isWritable(directory) {
